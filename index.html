@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>小说阅读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --paper: #F1ECE1;
+    --paper-panel: #E9E2D3;
+    --ink: #23262E;
+    --ink-soft: #5B5A54;
+    --jade: #4A6656;
+    --seal: #8C3D2E;
+    --line: #D8CFBC;
+    --radius: 3px;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --paper: #1B1D22; --paper-panel: #22252B; --ink: #E9E5DA;
+      --ink-soft: #9B9890; --jade: #7FA491; --seal: #C0685A; --line: #34373E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #1B1D22; --paper-panel: #22252B; --ink: #E9E5DA;
+    --ink-soft: #9B9890; --jade: #7FA491; --seal: #C0685A; --line: #34373E;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+  body {
+    margin: 0; min-height: 100%;
+    background: var(--paper); color: var(--ink);
+    font-family: "Noto Sans SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    transition: background .25s ease, color .25s ease;
+  }
+
+  header {
+    padding: 2.2rem 1.5rem 1.4rem;
+    text-align: center;
+    border-bottom: 1px solid var(--line);
+  }
+  .mark { width: 10px; height: 10px; background: var(--seal); border-radius: 1px; margin: 0 auto .9rem; }
+  h1 {
+    margin: 0;
+    font-family: "Noto Serif SC", serif;
+    font-weight: 700;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    letter-spacing: .04em;
+  }
+  .byline { margin-top: .5rem; font-size: .85rem; color: var(--ink-soft); }
+
+  .controls {
+    max-width: 760px; margin: 0 auto; padding: 1rem 1.5rem;
+    display: flex; flex-wrap: wrap; gap: .6rem;
+    align-items: center; justify-content: space-between;
+  }
+  .chapter-select {
+    flex: 1 1 auto; min-width: 160px;
+    font-family: "Noto Sans SC", sans-serif; font-size: .92rem;
+    color: var(--ink); background: var(--paper-panel);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: .5rem .7rem;
+  }
+  .btn-group { display: flex; gap: .4rem; }
+  button.tool {
+    font-family: "Noto Sans SC", sans-serif; font-size: .85rem;
+    background: var(--paper-panel); color: var(--ink);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: .5rem .7rem; cursor: pointer;
+  }
+  button.tool:hover { border-color: var(--jade); }
+  button.tool:focus-visible, .chapter-select:focus-visible {
+    outline: 2px solid var(--jade); outline-offset: 1px;
+  }
+
+  main { max-width: 700px; margin: 0 auto; padding: 1rem 1.5rem 5rem; }
+  .chap-title-display {
+    font-family: "Noto Serif SC", serif; font-weight: 600; font-size: 1.3rem;
+    margin: 1.4rem 0 1.6rem; padding-bottom: .8rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .chap-text-display {
+    font-family: "Noto Serif SC", serif;
+    font-size: var(--fs, 1.08rem);
+    line-height: 2.05;
+    letter-spacing: .02em;
+    color: var(--ink);
+    white-space: pre-line;
+    text-align: justify;
+  }
+
+  nav.pager {
+    max-width: 700px; margin: 2rem auto 0; padding: 0 1.5rem;
+    display: flex; justify-content: space-between; gap: 1rem;
+  }
+  nav.pager button {
+    flex: 1; font-family: "Noto Sans SC", sans-serif; font-size: .9rem;
+    background: var(--paper-panel); color: var(--ink);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: .8rem 1rem; cursor: pointer;
+  }
+  nav.pager button:disabled { opacity: .4; cursor: default; }
+  nav.pager button:not(:disabled):hover { border-color: var(--jade); }
+
+  footer { text-align: center; font-size: .78rem; color: var(--ink-soft); padding: 2rem 1rem 3rem; }
+
+  /* 原始章节数据不显示在页面上，只用来被脚本读取 */
+  #source { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mark"></div>
+  <h1>暴力重构</h1>
+  <p class="byline">徐中承</p>
+</header>
+
+<div class="controls">
+  <select class="chapter-select" id="chapterSelect" aria-label="选择章节"></select>
+  <div class="btn-group">
+    <button class="tool" id="fontMinus" aria-label="缩小字号">A－</button>
+    <button class="tool" id="fontPlus" aria-label="放大字号">A＋</button>
+    <button class="tool" id="themeToggle" aria-label="切换深浅色">☾／☀</button>
+  </div>
+</div>
+
+<main>
+  <h2 class="chap-title-display" id="chapterTitle"></h2>
+  <div class="chap-text-display" id="content"></div>
+</main>
+
+<nav class="pager">
+  <button id="prevBtn">← 上一章</button>
+  <button id="nextBtn">下一章 →</button>
+</nav>
+
+<footer>原文来自微博：徐中承_
+同主角晋江：《臣服万人迷实录》</footer>
+
+
+
+<div id="source">
+
+  <div class="chapter">
+    <h2>第七章：要准备一下吗</h2>
+    <p>
+　　魏扶铮没有回头，脚步声一路追在身后。
+
+　　他径直进了客室，坐在沙发上的助理当即站起，问：“结束了？”男人面容还算英俊，只是发间散生的白发使得面上的沧桑尤为深刻。
+
+　　魏扶铮洗了手，把头发往脑后捋，光洁饱满的额头覆着薄汗，“你怎么坐在这？”
+
+　　助理关掉手机里的变声软件，背上魏扶铮的包，趋前问道：“是我刚才……”他语气小心，“连线说的话不太符合要求吗？”
+
+　　“没，”魏扶铮狭长的丹凤眼淡然直视，“您说得没有问题，叔叔。”
+
+　　许是热了，他一面说着，一面脱下薄外套。紧身黑衣贴着肩背，随着呼吸起伏。
+
+　　衣料不厚，妥帖地镌刻出肩宽腰窄的身形，胸腹肌肉线条沟壑分明，布料被撑得发白。
+
+　　“这样。”助理被他周身狂乱的精神力烫得缩手，“你还是快点和他们解决一下吧，免得扎针。”
+
+　　魏扶铮怀疑室内的暖气开得太暖，他一手顺着衣服下摆伸入皮肤，衣料被他的手掌向胸部的推动犁现出衣下的肌肤。
+
+　　很快，他又落下手，揉捏眉宇，“让开。”
+
+　　男人怔忡，耳朵一动听到不远处渐行渐近的动静，便重新放下包，弱声道：“扶铮，我在外面等你，你好了就叫我。”
+
+　　对方甫一走远，魏扶铮也没转向身后的动静，而是闷咳几声，旋即从挎包中翻找出针剂。
+
+　　他坐到沙发上，抖得几不可察的双手拨了三次针帽。
+
+　　针管秀瘦，针头细长。魏扶铮没控制住摁塞的力道，几滴药剂从针头喷出。
+
+　　荧蓝的药剂倒映在眼中。手腕的细密的针孔和颈侧的刺麻还在隐隐作痛。
+
+　　针头又被盖上。
+
+　　身后的脚步声趑趄不前，噤声的二人是被面前蓦然诡异涨怒逸散的精神力逼得下跪的。
+
+　　余年看清他手中的针剂，“这药……用多了不好。”
+
+　　魏扶铮却对他身旁的人道：“你叫余岁壹？”
+
+　　少年眸光一亮，跪行靠前，“对。”
+
+　　“他叫余年？”
+
+　　余岁壹不高兴道：“嗯……”
+
+　　他正斜睇向余年，却忽然感觉自己的脸被一双手捧住。
+
+　　余岁壹定睛上看，只有对方肃冷的眉眼，而瞳孔开始飘忽不知改落向何处时，耳边忽然钻入了一声极轻的哼笑。
+
+　　“你不错。”
+
+　　不知道是不是自己的脸热了，还是对方手心的温度过于滚烫了。
+
+　　“我……”
+
+　　魏扶铮打断他：“你要准备一下么？我要吻你了。”
+
+　　这是什么话？为什么会问他的意见？
+
+　　此时，他感受着他们额头相抵时的温度，很快，那道的低语循循善诱道：“把你的精神力放出来。”
+
+　　余岁壹脑子一片浆糊，喉头滞涩，呼吸凝重。
+
+　　“好、好的……”他说着，慢慢散出自己的精神力，试探顺抚扶主躁乱的精神力。
+
+　　而已经膝行跪坐在近旁的余年，怔怔盯着二人。
+
+　　他也感觉到了。
+
+　　在弟弟和扶主的精神缠绵融合之际，他也感受到了。
+
+　　对方那完全混乱无序的领域。
+
+　　或许是错觉吧，他总觉得自己的脸下，额头，也被抵上陌生的温度。
+
+　　余年眼睛发红，企图用肉眼再看出什么，但只能看见那两人交颈贴唇。
+
+　　魏扶铮一直半敛眼，并未闭上。
+
+　　可能是他先入为主的碰头，一时间，余岁壹对他唇舌的应付没有什么招架之力，也不需要顺应他的动作或者心情。因为就在魏扶铮轻咬对方的舌尖之际，便稍松了齿关力道，深吸一气。
+
+　　微凉的游丝一齐流入口腔，魏扶铮额侧鞭笞般的疼痛才就此缓释不少。
+
+　　不过看见余岁壹面露痛苦，魏扶铮收缓汲取，安抚性地伸出濡红的舌尖，舔舐余岁壹发抖的唇瓣。
+
+　　余岁壹尽力依顺安抚魏扶铮的精神力，却仿佛缠上了狰狞的荆棘一般，荆刺死死嵌进神经。
+
+　　见他的冷汗愈流愈多，魏扶铮稍退身，抓住他的双肩。
+
+　　看着看着，魏扶铮忽然笑了。
+
+　　深浓含锋的眉尾上扬，唇边的梨涡明晃晃陷下。
+
+　　“你还好吗？”魏扶铮笑着问他。
+
+　　锯子般的钝痛切割神经，余岁强撑笑道：“好…好。”
+
+　　“如果岁壹不行……”余年终于出声，“可以换我来，我是他的哥哥，精神力比他成熟，或许比他强一点……”
+
+　　余岁壹猛然转头，面皮抽搐。
+
+　　话落，魏扶铮这才正眼看他，疑惑道：“你怎么还在这？”
+
+　　余年抠着大腿，“那是刚刚……现在、现在不想走了。”
+
+　　余岁壹却开始破口大骂。
+
+　　污秽的市井俚语，余年沉默以对，还是难以想象靠血缘关系维系的弟弟竟然真的对他说出这种话。
+
+　　好像自己真是从脏院出来的一样。
+
+　　面无表情忍受着余岁壹暗地伸来抓拧皮肉的动作，余年好像从眼角视线看到了什么。
+
+　　脚踝顺着暗流力量的肌肉，两条修长的腿部尽头，最后一层布料也随着主人指间的抓取褪下。
+
+　　喘息炙闷的魏扶铮自顾自想脱下最后一层上衣，但屡次的脱手加剧心底的不耐。
+
+　　“你，”魏扶铮压眉锁向余年，“过来。”
+
+　　一张沙发，余年还记得上一次躺在这里，是昨晚在翻阅解剖书的时候。
+
+　　他注意到视野边缘两道贴得及近甚至可能相拥的影子，一动不敢动。
+
+　　怎么办？
+      
+    </p>
+  </div>
+
+  
+
+</div>
+
+
+<script>
+(function () {
+  const chapters = Array.from(document.querySelectorAll('#source .chapter')).map(el => ({
+    title: (el.querySelector('h2')?.textContent || '').trim(),
+    text: (el.querySelector('p')?.textContent || '').trim()
+  }));
+
+  const select = document.getElementById('chapterSelect');
+  const chapterTitleEl = document.getElementById('chapterTitle');
+  const contentEl = document.getElementById('content');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const fontPlus = document.getElementById('fontPlus');
+  const fontMinus = document.getElementById('fontMinus');
+  const themeToggle = document.getElementById('themeToggle');
+
+  chapters.forEach((ch, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = ch.title || ('第 ' + (i + 1) + ' 章');
+    select.appendChild(opt);
+  });
+
+  let current = 0;
+  let fontSize = 1.08;
+
+  function render() {
+    const ch = chapters[current];
+    if (!ch) return;
+    chapterTitleEl.textContent = ch.title;
+    contentEl.textContent = ch.text;
+    select.value = current;
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === chapters.length - 1;
+    document.documentElement.style.setProperty('--fs', fontSize + 'rem');
+    window.scrollTo(0, 0);
+  }
+
+  select.addEventListener('change', () => { current = Number(select.value); render(); });
+  prevBtn.addEventListener('click', () => { if (current > 0) { current--; render(); } });
+  nextBtn.addEventListener('click', () => { if (current < chapters.length - 1) { current++; render(); } });
+  fontPlus.addEventListener('click', () => { fontSize = Math.min(1.6, fontSize + 0.08); render(); });
+  fontMinus.addEventListener('click', () => { fontSize = Math.max(0.85, fontSize - 0.08); render(); });
+
+  themeToggle.addEventListener('click', () => {
+    const root = document.documentElement;
+    const cur = root.getAttribute('data-theme');
+    if (cur === 'dark') root.setAttribute('data-theme', 'light');
+    else if (cur === 'light') root.removeAttribute('data-theme');
+    else root.setAttribute('data-theme', 'dark');
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
